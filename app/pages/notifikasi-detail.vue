@@ -21,6 +21,7 @@ const railNotifications = [
   { id: 1, text: "Lamaran kamu sudah dilihat HRD", time: "5 menit lalu" },
   { id: 2, text: "Lowongan baru cocok dengan profil kamu", time: "20 menit lalu" },
   { id: 3, text: "Akun kamu berhasil diverifikasi", time: "1 jam lalu" },
+  { id: 4, text: "Lowongan berhasil diverifikasi", time: "3 hari lalu" },
 ]
 
 const toggleRailNotifications = () => {
@@ -68,15 +69,86 @@ const notificationDetails = ref<NotificationItem[]>([
     time: "2 hari lalu",
     isRead: false,
   },
+  {
+    id: 6,
+    title: "Lowongan berhasil diverifikasi",
+    message: "Lowongan yang kamu posting telah diverifikasi dan siap ditampilkan kepada pencari kerja.",
+    category: "Lowongan",
+    time: "3 hari lalu",
+    isRead: false,
+  },
+  {
+    id: 7,
+    title: "Ada satu lowongan yang perlu diverifikasi",
+    message: "Terdapat satu lowongan pekerjaan baru yang membutuhkan verifikasi sebelum tayang.",
+    category: "Lowongan",
+    time: "Baru saja",
+    isRead: false,
+  },
 ])
 
 const unreadNotificationCount = computed(() => notificationDetails.value.filter((item) => !item.isRead).length)
+
+const toRelativeTimeTimestamp = (timeLabel: string) => {
+  const now = Date.now()
+  const normalized = timeLabel.trim().toLowerCase()
+
+  if (normalized === "baru saja") return now
+  if (normalized === "kemarin") return now - 24 * 60 * 60 * 1000
+
+  const menitMatch = normalized.match(/^(\d+)\s+menit lalu$/)
+  if (menitMatch) return now - Number(menitMatch[1]) * 60 * 1000
+
+  const jamMatch = normalized.match(/^(\d+)\s+jam lalu$/)
+  if (jamMatch) return now - Number(jamMatch[1]) * 60 * 60 * 1000
+
+  const hariMatch = normalized.match(/^(\d+)\s+hari lalu$/)
+  if (hariMatch) return now - Number(hariMatch[1]) * 24 * 60 * 60 * 1000
+
+  return 0
+}
+
+const sortedNotificationDetails = computed(() =>
+  [...notificationDetails.value].sort((a, b) => toRelativeTimeTimestamp(b.time) - toRelativeTimeTimestamp(a.time)),
+)
 
 const markAllAsRead = () => {
   notificationDetails.value = notificationDetails.value.map((item) => ({
     ...item,
     isRead: true,
   }))
+}
+
+const notificationTargetById: Record<number, string> = {
+  1: "https://siapkerja.kemnaker.go.id/app/home",
+  2: "/karirhub-clone",
+  3: "/karirhub-clone",
+  4: "/karirhub-clone",
+  5: "/dasbor_pemberi_kerja",
+  6: "/dasbor_pemberi_kerja",
+  7: "/",
+}
+
+const openNotification = async (item: NotificationItem) => {
+  notificationDetails.value = notificationDetails.value.map((notif) =>
+    notif.id === item.id
+      ? {
+          ...notif,
+          isRead: true,
+        }
+      : notif,
+  )
+
+  const target = notificationTargetById[item.id]
+  if (!target) return
+
+  if (target.startsWith("http")) {
+    await navigateTo(target, { external: true })
+    return
+  }
+
+  if (route.path === target) return
+  await router.push(target)
 }
 
 const openAllNotifications = () => {
@@ -302,10 +374,15 @@ watch(
 
       <section class="notification-grid">
         <article
-          v-for="item in notificationDetails"
+          v-for="item in sortedNotificationDetails"
           :key="item.id"
           class="notification-item"
           :class="{ unread: !item.isRead }"
+          role="button"
+          tabindex="0"
+          @click="openNotification(item)"
+          @keydown.enter.prevent="openNotification(item)"
+          @keydown.space.prevent="openNotification(item)"
         >
           <div class="item-top">
             <span class="category">{{ item.category }}</span>
@@ -664,6 +741,7 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+  cursor: pointer;
 }
 
 .notification-item.unread {

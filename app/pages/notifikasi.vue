@@ -8,6 +8,8 @@ type NotificationDetail = {
   isRead: boolean
 }
 
+const route = useRoute()
+
 const notificationDetails = ref<NotificationDetail[]>([
   {
     id: 1,
@@ -41,10 +43,57 @@ const notificationDetails = ref<NotificationDetail[]>([
     time: "Kemarin",
     isRead: true,
   },
+  {
+    id: 5,
+    title: "Profil perusahaan membutuhkan pembaruan",
+    message: "Lengkapi data alamat dan kontak perusahaan untuk meningkatkan kepercayaan pelamar.",
+    category: "Akun",
+    time: "2 hari lalu",
+    isRead: false,
+  },
+  {
+    id: 6,
+    title: "Lowongan berhasil diverifikasi",
+    message: "Lowongan yang kamu posting telah diverifikasi dan siap ditampilkan kepada pencari kerja.",
+    category: "Lowongan",
+    time: "3 hari lalu",
+    isRead: false,
+  },
+  {
+    id: 7,
+    title: "Ada satu lowongan yang perlu diverifikasi",
+    message: "Terdapat satu lowongan pekerjaan baru yang membutuhkan verifikasi sebelum tayang.",
+    category: "Lowongan",
+    time: "Baru saja",
+    isRead: false,
+  },
 ])
 
 const unreadNotificationCount = computed(() => notificationDetails.value.filter((item) => !item.isRead).length)
 const showNotifications = ref(false)
+
+const toRelativeTimeTimestamp = (timeLabel: string) => {
+  const now = Date.now()
+  const normalized = timeLabel.trim().toLowerCase()
+
+  if (normalized === "baru saja") return now
+  if (normalized === "kemarin") return now - 24 * 60 * 60 * 1000
+
+  const menitMatch = normalized.match(/^(\d+)\s+menit lalu$/)
+  if (menitMatch) return now - Number(menitMatch[1]) * 60 * 1000
+
+  const jamMatch = normalized.match(/^(\d+)\s+jam lalu$/)
+  if (jamMatch) return now - Number(jamMatch[1]) * 60 * 60 * 1000
+
+  const hariMatch = normalized.match(/^(\d+)\s+hari lalu$/)
+  if (hariMatch) return now - Number(hariMatch[1]) * 24 * 60 * 60 * 1000
+
+  return 0
+}
+
+const sortedNotificationDetails = computed(() =>
+  [...notificationDetails.value].sort((a, b) => toRelativeTimeTimestamp(b.time) - toRelativeTimeTimestamp(a.time)),
+)
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
@@ -55,6 +104,40 @@ const markAllAsRead = () => {
     ...item,
     isRead: true,
   }))
+}
+
+const notificationTargetById: Record<number, string> = {
+  1: "https://siapkerja.kemnaker.go.id/app/home",
+  2: "/karirhub-clone",
+  3: "/karirhub-clone",
+  4: "/karirhub-clone",
+  5: "/dasbor_pemberi_kerja",
+  6: "/dasbor_pemberi_kerja",
+  7: "/",
+}
+
+const openNotification = async (item: NotificationDetail) => {
+  notificationDetails.value = notificationDetails.value.map((notif) =>
+    notif.id === item.id
+      ? {
+          ...notif,
+          isRead: true,
+        }
+      : notif,
+  )
+
+  showNotifications.value = false
+
+  const target = notificationTargetById[item.id]
+  if (!target) return
+
+  if (target.startsWith("http")) {
+    await navigateTo(target, { external: true })
+    return
+  }
+
+  if (route.path === target) return
+  await navigateTo(target)
 }
 </script>
 
@@ -82,11 +165,11 @@ const markAllAsRead = () => {
             <div v-if="showNotifications" class="notification-dropdown">
               <p class="notification-title">Notifikasi</p>
               <ul>
-                <li v-for="item in notificationDetails.slice(0, 3)" :key="item.id" :class="{ unread: !item.isRead }">
-                  <NuxtLink class="notification-link" to="/karirhub-clone">
+                <li v-for="item in sortedNotificationDetails.slice(0, 3)" :key="item.id" :class="{ unread: !item.isRead }">
+                  <button type="button" class="notification-link" @click="openNotification(item)">
                     <span>{{ item.title }}</span>
                     <small>{{ item.time }}</small>
-                  </NuxtLink>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -119,12 +202,16 @@ const markAllAsRead = () => {
     </section>
 
     <main class="container page-content">
-      <NuxtLink
-        v-for="item in notificationDetails"
+      <article
+        v-for="item in sortedNotificationDetails"
         :key="item.id"
-        to="/karirhub-clone"
         class="notification-item"
         :class="{ unread: !item.isRead }"
+        role="button"
+        tabindex="0"
+        @click="openNotification(item)"
+        @keydown.enter.prevent="openNotification(item)"
+        @keydown.space.prevent="openNotification(item)"
       >
         <div class="item-top">
           <span class="category">{{ item.category }}</span>
@@ -132,7 +219,7 @@ const markAllAsRead = () => {
         </div>
         <h2>{{ item.title }}</h2>
         <p>{{ item.message }}</p>
-      </NuxtLink>
+      </article>
     </main>
   </div>
 </template>
@@ -303,6 +390,12 @@ const markAllAsRead = () => {
   gap: 0.2rem;
   color: inherit;
   text-decoration: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
 }
 
 .dashboard-chip {
@@ -394,8 +487,8 @@ const markAllAsRead = () => {
   border: 1px solid #e5e7eb;
   border-radius: 0.85rem;
   padding: 1rem;
-  text-decoration: none;
   color: inherit;
+  cursor: pointer;
 }
 
 .notification-item.unread {
