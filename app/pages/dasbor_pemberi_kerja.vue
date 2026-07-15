@@ -3,10 +3,17 @@ const navItems = ["Daftar Pekerjaan", "Talent Search", "Profil + Ulasan Perusaha
 const router = useRouter()
 
 const showNotifications = ref(false)
-const notifications = [
-  { id: 1, title: "Lowongan baru menunggu review", time: "5 menit lalu" },
-  { id: 2, title: "Ada 3 pelamar baru untuk posisi UI/UX", time: "20 menit lalu" },
-  { id: 3, title: "Profil perusahaan berhasil diperbarui", time: "1 jam lalu" },
+type DashboardNotification = {
+  id: number
+  title: string
+  time: string
+  target: string
+}
+
+const notifications: DashboardNotification[] = [
+  { id: 1, title: "Lowongan baru sudah diverifikasi", time: "5 menit lalu", target: "/dasbor_pemberi_kerja" },
+  { id: 2, title: "Ada 3 pelamar baru untuk posisi UI/UX", time: "20 menit lalu", target: "/dasbor_pemberi_kerja" },
+  { id: 3, title: "Profil perusahaan berhasil diperbarui", time: "1 jam lalu", target: "/dasbor_pemberi_kerja" },
 ]
 const notificationCount = computed(() => notifications.length)
 
@@ -17,6 +24,11 @@ const toggleNotifications = () => {
 const openAllNotifications = () => {
   showNotifications.value = false
   void router.push("/semua-notifikasi")
+}
+
+const openNotificationItem = (item: DashboardNotification) => {
+  showNotifications.value = false
+  void router.push(item.target)
 }
 </script>
 
@@ -45,7 +57,7 @@ const openAllNotifications = () => {
               <p class="notif-title">Notifikasi</p>
               <ul>
                 <li v-for="item in notifications" :key="item.id">
-                  <span>{{ item.title }}</span>
+                  <button type="button" class="notif-link" @click="openNotificationItem(item)">{{ item.title }}</button>
                   <small>{{ item.time }}</small>
                 </li>
               </ul>
@@ -259,6 +271,22 @@ const openAllNotifications = () => {
   background: #f8fbff;
   display: grid;
   gap: 2px;
+}
+
+.notif-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: #274868;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notif-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 .notif-dropdown li span {

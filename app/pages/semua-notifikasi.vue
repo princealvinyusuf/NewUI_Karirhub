@@ -128,6 +128,28 @@ const notificationTargetById: Record<number, string> = {
   7: "/",
 }
 
+const secondaryCategoryById: Record<number, string> = {
+  1: "Pencari Kerja",
+  2: "Pencari Kerja",
+  3: "Pencari Kerja",
+  4: "Pencari Kerja",
+  5: "Pemberi Kerja",
+  6: "Pemberi Kerja",
+  7: "Admin",
+}
+
+const getSecondaryCategory = (id: number) => secondaryCategoryById[id] ?? "Lainnya"
+const secondaryCategoryTypeById: Record<number, "pencari" | "pemberi" | "admin"> = {
+  1: "pencari",
+  2: "pencari",
+  3: "pencari",
+  4: "pencari",
+  5: "pemberi",
+  6: "pemberi",
+  7: "admin",
+}
+const getSecondaryCategoryType = (id: number) => secondaryCategoryTypeById[id] ?? "pencari"
+
 const openNotification = async (item: NotificationDetail) => {
   notificationDetails.value = notificationDetails.value.map((notif) =>
     notif.id === item.id
@@ -235,7 +257,12 @@ const goToDashboard = () => {
         @keydown.space.prevent="openNotification(item)"
       >
         <div class="item-top">
-          <span class="category">{{ item.category }}</span>
+          <div class="category-group">
+            <span class="category">{{ item.category }}</span>
+            <span class="category-secondary" :class="getSecondaryCategoryType(item.id)">
+              {{ getSecondaryCategory(item.id) }}
+            </span>
+          </div>
           <time>{{ item.time }}</time>
         </div>
         <h2>{{ item.title }}</h2>
@@ -550,6 +577,35 @@ const goToDashboard = () => {
   padding: 0.2rem 0.7rem;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.category-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.category-secondary {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.category-secondary.pencari {
+  background: #f3e8ff;
+  color: #6d28d9;
+}
+
+.category-secondary.pemberi {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.category-secondary.admin {
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .item-top time {

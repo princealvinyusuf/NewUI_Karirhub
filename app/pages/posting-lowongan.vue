@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const router = useRouter()
+
 type RegionOption = {
   id: string
   name: string
@@ -54,6 +56,15 @@ type CompanyInfoForm = {
   deskripsiPerusahaan: string
 }
 
+type PendingVacancyRecord = {
+  id: number
+  title: string
+  location: string
+  status: "Menunggu Verifikasi"
+  createdAt: string
+}
+
+const pendingVacancyStorageKey = "karirhub_pending_vacancies_sidebar"
 const wilayahApiBaseUrl = "https://www.emsifa.com/api-wilayah-indonesia/api"
 
 const jabatanKbjiOptions = [
@@ -497,7 +508,26 @@ const handleStep5Submit = () => {
     submitError.value = "Anda harus menyetujui syarat dan ketentuan terlebih dahulu."
     return
   }
+  if (import.meta.client) {
+    const locationText = [form.kelurahan, form.kecamatan, form.kota, form.provinsi].filter(Boolean).join(", ")
+    const pendingVacancy: PendingVacancyRecord = {
+      id: Date.now(),
+      title: form.judulPekerjaan.trim(),
+      location: locationText || "Lokasi belum tersedia",
+      status: "Menunggu Verifikasi",
+      createdAt: new Date().toISOString(),
+    }
+    try {
+      const existingRaw = localStorage.getItem(pendingVacancyStorageKey)
+      const existingRecords = existingRaw ? (JSON.parse(existingRaw) as PendingVacancyRecord[]) : []
+      const updatedRecords = [pendingVacancy, ...existingRecords]
+      localStorage.setItem(pendingVacancyStorageKey, JSON.stringify(updatedRecords))
+    } catch {
+      // Silent fail to keep submit flow intact.
+    }
+  }
   submitMessage.value = "Lowongan berhasil dibuat."
+  void router.push("/dasbor_pemberi_kerja_sidebar")
 }
 
 const resetStep1Form = () => {

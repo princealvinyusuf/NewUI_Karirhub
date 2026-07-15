@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const router = useRouter()
+
 type JobItem = {
   title: string
   company: string
@@ -19,6 +21,8 @@ type NotificationItem = {
   title: string
   time: string
   isRead: boolean
+  target: string
+  linkType: "internal" | "external"
 }
 
 const menuItems = ["Tentang Karirhub", "Lowongan Dalam Negeri", "Lowongan Luar Negeri", "Jobfair", "Media Center"]
@@ -120,15 +124,53 @@ const testimonials = [
 
 const showNotifications = ref(false)
 const notifications = ref<NotificationItem[]>([
-  { id: 1, title: "Lamaran kamu sudah dilihat HRD", time: "5 menit lalu", isRead: false },
-  { id: 2, title: "Lowongan baru cocok dengan profil kamu", time: "20 menit lalu", isRead: false },
-  { id: 3, title: "Akun kamu berhasil diverifikasi", time: "1 jam lalu", isRead: true },
+  {
+    id: 1,
+    title: "Lamaran Kamu Sudah di lihat HRD",
+    time: "5 menit lalu",
+    isRead: false,
+    target: "https://siapkerja.kemnaker.go.id/",
+    linkType: "external",
+  },
+  {
+    id: 2,
+    title: "Lowongan baru cocok dengan profil kamu",
+    time: "20 menit lalu",
+    isRead: false,
+    target: "/karirhub-clone",
+    linkType: "internal",
+  },
+  {
+    id: 3,
+    title: "Akun kamu berhasil di verifikasi",
+    time: "1 jam lalu",
+    isRead: true,
+    target: "/karirhub-clone",
+    linkType: "internal",
+  },
 ])
 
 const unreadNotificationCount = computed(() => notifications.value.filter((item) => !item.isRead).length)
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
+}
+
+const openNotificationTarget = (item: NotificationItem) => {
+  showNotifications.value = false
+
+  if (item.linkType === "external") {
+    if (import.meta.client) {
+      window.location.assign(item.target)
+    }
+    return
+  }
+
+  void router.push(item.target)
+}
+
+const goToEmployerDashboard = () => {
+  void router.push("/dasbor_pemberi_kerja")
 }
 </script>
 
@@ -161,17 +203,17 @@ const toggleNotifications = () => {
               <p class="notification-title">Notifikasi</p>
               <ul>
                 <li v-for="item in notifications" :key="item.id" :class="{ unread: !item.isRead }">
-                  <NuxtLink class="notification-link" to="/karirhub-clone">
+                  <button type="button" class="notification-link" @click="openNotificationTarget(item)">
                     <span>{{ item.title }}</span>
                     <small>{{ item.time }}</small>
-                  </NuxtLink>
+                  </button>
                 </li>
               </ul>
               <NuxtLink class="see-all-notifications" to="/notifikasi">Lihat semua notifikasi</NuxtLink>
             </div>
           </div>
 
-          <button class="dashboard-chip" type="button">
+          <button class="dashboard-chip" type="button" @click="goToEmployerDashboard">
             <span>Dasbor Pengelola</span>
             <span class="dashboard-avatar">
               <i class="fa-solid fa-user" />
@@ -514,8 +556,19 @@ const toggleNotifications = () => {
 .notification-link {
   display: grid;
   gap: 0.2rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.notification-link:hover span {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 .see-all-notifications {

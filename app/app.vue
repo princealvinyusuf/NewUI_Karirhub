@@ -21,13 +21,35 @@ const profileUrl = "https://account.kemnaker.go.id/users/48abb8e2-0ff0-4bec-a477
 const logoError = ref(false)
 const profileError = ref(false)
 const showRailNotifications = ref(false)
-const railNotifications = [
-  { id: 1, text: "Lowongan berhasil dipublikasikan", time: "5 menit lalu" },
-  { id: 2, text: "Ada pelamar baru untuk posisi UI Designer", time: "17 menit lalu" },
-  { id: 3, text: "Lowongan akan berakhir dalam 2 hari", time: "1 jam lalu" },
+type RailNotificationLinkType = "internal" | "external"
+type RailNotification = {
+  id: number
+  text: string
+  time: string
+  target: string
+  linkType: RailNotificationLinkType
+}
+
+const railNotifications: RailNotification[] = [
+  { id: 1, text: "Lamaran Kamu Sudah di lihat HRD", time: "5 menit lalu", target: "https://siapkerja.kemnaker.go.id/", linkType: "external" },
+  { id: 2, text: "Lowongan baru cocok dengan profil kamu", time: "12 menit lalu", target: "/karirhub-clone", linkType: "internal" },
+  { id: 3, text: "Akun kamu berhasil di verifikasi", time: "20 menit lalu", target: "/karirhub-clone", linkType: "internal" },
+  { id: 4, text: "Lowongan berhasil diverifikasi", time: "1 jam lalu", target: "/dasbor_pemberi_kerja", linkType: "internal" },
 ]
 const toggleRailNotifications = () => {
   showRailNotifications.value = !showRailNotifications.value
+}
+const handleRailNotificationClick = (item: RailNotification) => {
+  showRailNotifications.value = false
+  if (item.linkType === "external") {
+    if (import.meta.client) {
+      window.location.assign(item.target)
+    }
+    return
+  }
+
+  if (route.path === item.target) return
+  void router.push(item.target)
 }
 const openAllNotifications = () => {
   showRailNotifications.value = false
@@ -84,7 +106,7 @@ const menuSections = [
 
 const menuRouteMap: Record<string, string> = {
   "PEMBERI KERJA::Invitation": "/",
-  "LOWONGAN::Posting Lowongan": "/posting-lowongan",
+  "LOWONGAN::Posting Lowongan": "/dasbor_pemberi_kerja_sidebar",
 }
 
 const isAktivitasPencariExpanded = ref(false)
@@ -1514,7 +1536,9 @@ const iconByItem: Record<string, string> = {
           <p class="rail-notif-title">Notifikasi</p>
           <ul>
             <li v-for="item in railNotifications" :key="item.id">
-              <span>{{ item.text }}</span>
+              <button type="button" class="rail-notif-link" @click="handleRailNotificationClick(item)">
+                {{ item.text }}
+              </button>
               <small>{{ item.time }}</small>
             </li>
           </ul>
@@ -2510,6 +2534,22 @@ const iconByItem: Record<string, string> = {
   background: #f8fbff;
   display: grid;
   gap: 3px;
+}
+
+.rail-notif-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-size: 11px;
+  color: #274868;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rail-notif-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 .rail-notif-dropdown li span {
